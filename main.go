@@ -15,15 +15,16 @@ import (
 const (
 	userEmail = "username@gmail.com"
 	password  = "passw0rd"
-	test      = "test"
 )
 
 func main() {
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
 
-	var mevcutRandevuTarihi time.Time
-	var buldugumTarih string
+	var currentAppointmentDate time.Time
+	var findedDate string
+	var currentAppointmentDateHTML string
+	var findedDateHTML string
 
 	err := chromedp.Run(ctx,
 		chromedp.Navigate("https://ais.usvisa-info.com/tr-tr/niv/users/sign_in"),
@@ -36,14 +37,14 @@ func main() {
 		chromedp.Click(`input[name="commit"]`),
 		chromedp.Sleep(5*time.Second),
 		chromedp.WaitVisible(`img`, chromedp.ByQuery),
-		chromedp.OuterHTML(`body`, &mevcutRandevuTarihiHTML),
+		chromedp.OuterHTML(`body`, &currentAppointmentDateHTML),
 	)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	mevcutRandevuTarihi, err = extractCurrentAppointmentDate(mevcutRandevuTarihiHTML)
+	currentAppointmentDate, err = extractCurrentAppointmentDate(currentAppointmentDateHTML)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -57,19 +58,19 @@ func main() {
 		chromedp.Sleep(3*time.Second),
 		chromedp.Click(`input[name="appointments_consulate_appointment_date"]`),
 		chromedp.Sleep(3*time.Second),
-		chromedp.OuterHTML(`#ui-datepicker-div`, &buldugumTarihHTML),
+		chromedp.OuterHTML(`#ui-datepicker-div`, &findedDateHTML),
 	)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	buldugumTarih, err = extractEarliestAvailableDate(buldugumTarihHTML)
+	findedDate, err = extractEarliestAvailableDate(findedDateHTML)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	compareDatesAndNotify(mevcutRandevuTarihi, buldugumTarih)
+	compareDatesAndNotify(currentAppointmentDate, findedDate)
 
 	err = chromedp.Run(ctx,
 		chromedp.Click(`a:contains("Eylemler")`),
@@ -149,17 +150,17 @@ func extractEarliestAvailableDate(html string) (string, error) {
 	return dataList[0], nil
 }
 
-func compareDatesAndNotify(mevcutRandevuTarihi time.Time, buldugumTarih string) {
-	date1, err := time.Parse("02/01/2006", buldugumTarih)
+func compareDatesAndNotify(currentAppointmentDate time.Time, findedDate string) {
+	date1, err := time.Parse("02/01/2006", findedDate)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	randTarihi := mevcutRandevuTarihi.Format("02/01/2006")
+	randTarihi := currentAppointmentDate.Format("02/01/2006")
 
-	if date1.Before(mevcutRandevuTarihi) {
-		fmt.Printf("Daha erkene randevu buldum. %s tarihine randevu açıldı. Sizin güncel randevu tarihiniz: %s\n", buldugumTarih, randTarihi)
+	if date1.Before(currentAppointmentDate) {
+		fmt.Printf("Daha erkene randevu buldum. %s tarihine randevu açıldı. Sizin güncel randevu tarihiniz: %s\n", findedDate, randTarihi)
 	} else {
-		fmt.Printf("En erken randevu tarihi %s. Sizin randevu tarihiniz: %s\n", buldugumTarih, randTarihi)
+		fmt.Printf("En erken randevu tarihi %s. Sizin randevu tarihiniz: %s\n", findedDate, randTarihi)
 	}
 }
