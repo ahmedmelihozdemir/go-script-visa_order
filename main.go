@@ -15,6 +15,7 @@ import (
 const (
 	userEmail = "username@gmail.com"
 	password  = "passw0rd"
+	test      = "test"
 )
 
 func main() {
